@@ -1,0 +1,36 @@
+{
+  "skill_name": "red-ics",
+  "default_output": "output",
+  "execution_modes": ["authorized", "passive-first", "supplement", "unknown"],
+  "default_mode": "unknown",
+  "asset_status": ["confirmed", "suspected", "rejected"],
+  "confidence_levels": ["high", "medium", "low"],
+  "phase_names": [
+    "phase0_prepare",
+    "phase1_org_recon",
+    "phase2_passive_osint",
+    "phase3_extended_assets",
+    "phase4_active_recon",
+    "phase5_report"
+  ],
+  "xlsx_template": {
+    "filename": "assets_summary.xlsx",
+    "sheet_name": "资产汇总",
+    "columns": [
+      "组织",
+      "域名",
+      "子域名",
+      "IP",
+      "CIDR",
+      "Web",
+      "端口",
+      "供应商",
+      "云服务",
+      "APP",
+      "小程序",
+      "公众号",
+      "泄露线索",
+      "主动探测"
+    ]
+  }
+}

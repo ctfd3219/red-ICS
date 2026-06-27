@@ -31,6 +31,22 @@ metadata:
 | 爱企查 (aiqicha.baidu.com) | 工商+司法+ICP备案 | 免费 |
 | 巨潮资讯网 (cninfo.com.cn) | 上市公司公告/年报 | 免费 |
 
+### 1.1.1 组织侦察硬性规则
+
+- 信息收集必须联网执行，优先使用官方工商、备案、招投标、官网、证书透明日志、搜索引擎和已配置 MCP 数据源交叉验证。
+- 每个候选组织、域名、IP、CIDR 都必须记录来源、命中关键词和归属判断；无法确认时标记为 `suspected`，不得写成 `confirmed`。
+- 不因单一平台无结果而停止；至少使用两个不同来源交叉验证核心实体和核心域名。
+- 阶段 1 产出的组织、域名、供应商、云服务、IP/CIDR 线索必须写入后续 OSINT 阶段的种子文件或日志，不能只写在报告正文里。
+
+### 1.1.2 IPSearch-MCP / ip.db 硬性规则
+
+- 目标包含 IPv4 或单位名称时，必须尝试使用 IPSearch-MCP 补充出口 IP 段和 CIDR 线索。
+- 依赖检查顺序固定为：检查已配置 MCP Server → 在本机常见工具目录、当前仓库、`scripts/`、用户工具目录中查找 `ipsearch-mcp` 和 `ip.db` → 本地仍不存在时尝试从 GitHub 下载或按项目说明安装 → 下载/安装失败则记录原因并跳过，继续下一阶段。
+- `ipsearch-mcp` 可运行时，必须通过 AI MCP 工具调用 `ip_lookup` 或 `keyword_lookup`；禁止自己写 Python 直接读取或解析 `ip.db`。
+- 需要生成关键词计划时，运行 `python scripts/ipsearch_mcp_plan.py --unit-name "<单位名称>"`；查询 IPv4 时运行 `python scripts/ipsearch_mcp_plan.py --ipv4 <IPv4>`。该脚本只生成 MCP 调用计划，不执行数据库查询。
+- 单位名称查询必须完整执行所有关键词规则，即使前一个关键词已有结果也不能提前停止；禁止使用 `zhejiang`、`hospital` 这类单独宽泛关键词。
+- 返回结果必须统一为 `CIDR | IP段描述/名称原文 | 中文归属解释`，并逐条说明该 IP 段归属目标或关联组织的原因。
+
 ### 1.2 股权穿透层级
 
 ```
@@ -78,6 +94,9 @@ metadata:
   □ 联系电话 / 邮箱            → 社工人点 + 反查关联
   □ 软件著作权 / 专利           → 产品名、技术栈
   □ 招投标信息                 → 内部系统名称、供应商
+  □ IP / CIDR 线索             → IPSearch-MCP、WHOIS、ASN、采购公告交叉验证
+  □ IP段归属证据               → 原始描述、中文翻译、命中关键词、判断原因
+  □ 供应商 / 云服务商           → 出口线路、政务云/商业云、CDN/WAF 归属辅助判断
   □ 持股比例                   → 控制力判断
 ```
 
@@ -492,6 +511,7 @@ dig TXT target.com | grep "v=spf1"
 │ ICP备案     │ icp.aizhan.com        │ ICP批量查询        │ 免费      │
 │ 采购招标    │ ccgp.gov.cn           │ 政府采购           │ 免费      │
 │ 采购招标    │ 各省公共资源交易平台    │ 招标公告           │ 免费      │
+│ IPSearch-MCP │ ip_lookup/keyword_lookup │ IP Whois+出口CIDR │ 免费/本地 │
 │ SSL证书     │ crt.sh / openssl      │ 证书透明+字段提取  │ 免费      │
 │ 云服务商    │ dig / curl / nslookup  │ DNS+Header分析     │ 免费      │
 └──────────────────────────────────────────────────────────────────────┘

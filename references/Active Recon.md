@@ -238,26 +238,26 @@ grep -oP '\d+\.\d+\.\d+\.\d+:\d+' masscan_ports.txt | sort -u > masscan_port_lis
   □ 11211 Memcached      → 未授权访问
   □ 8848  http(Nacos)    → 未授权访问
 
-第二优先级 (弱口令暴力):
-  □ 22    SSH            → 弱口令
-  □ 3389  RDP            → 弱口令
-  □ 3306  MySQL          → 弱口令
-  □ 1433  MSSQL          → 弱口令
-  □ 5432  PostgreSQL     → 弱口令
-  □ 21    FTP            → 匿名登录
+第二优先级 (登录暴露面记录，不做口令尝试):
+  □ 22    SSH            → 远程登录暴露面
+  □ 3389  RDP            → 远程桌面暴露面
+  □ 3306  MySQL          → 数据库暴露面
+  □ 1433  MSSQL          → 数据库暴露面
+  □ 5432  PostgreSQL     → 数据库暴露面
+  □ 21    FTP            → 匿名访问暴露面
   □ 23    Telnet         → 明文协议
 
 第三优先级 (Web中间件/运维):
-  □ 80/443   标准Web     → 指纹+目录爆破
-  □ 8080/8443 Tomcat     → 默认口令/版本漏洞
-  □ 7001/7002 WebLogic   → 反序列化漏洞
-  □ 8161     ActiveMQ    → 未授权访问
-  □ 9043     WebSphere   → 反序列化漏洞
+  □ 80/443   标准Web     → 存活确认+指纹识别
+  □ 8080/8443 Tomcat     → 管理入口/版本风险线索
+  □ 7001/7002 WebLogic   → 历史高危版本风险线索
+  □ 8161     ActiveMQ    → 管理入口暴露面
+  □ 9043     WebSphere   → 历史高危版本风险线索
   □ 9200/9300 ES         → 未授权访问
   □ 5601     Kibana      → 未授权访问
-  □ 5000     Docker Reg  → 镜像泄露
-  □ 1521     Oracle      → 弱口令
-  □ 445      SMB         → 永恒之蓝
+  □ 5000     Docker Reg  → 镜像仓库暴露面
+  □ 1521     Oracle      → 数据库暴露面
+  □ 445      SMB         → SMB 暴露面/历史漏洞风险线索
 ```
 
 ---
@@ -578,7 +578,7 @@ curl -s https://{IP}:10250/pods/ -k
 | IP | 端口 | 服务 | 风险类型 | 验证结果 |
 |----|------|------|---------|---------|
 | x.x.x.3 | 6379 | Redis | 未授权访问 | 存在未授权 |
-| x.x.x.6 | 22 | SSH | 弱口令风险 | 待验证 |
+| x.x.x.6 | 22 | SSH | 远程登录暴露面 | 待确认归属与访问策略 |
 
 ### 指纹识别详情
 
@@ -777,8 +777,8 @@ done
 masscan {target} -p1-65535 --rate 1000  # 不要超过5000
 
 # nmap: -T 控制速度等级 (0-5, 默认T3)
-nmap -T3 {target}         # 推荐T3, 平衡速度和隐蔽性
-nmap -T2 {target}         # 慢速, 更隐蔽
+nmap -T3 {target}         # 推荐T3, 平衡速度和稳定性
+nmap -T2 {target}         # 慢速, 降低对目标影响
 
 # httpx: -rl 限制每秒请求数
 httpx -rl 50 {targets}     # 每秒50个请求
@@ -793,7 +793,7 @@ sleep 0.5  # 每次请求间隔500ms
 ### 9.2 代理配置
 
 ```bash
-# HTTP代理 (避免源IP暴露)
+# HTTP代理 (使用授权测试出口或隔离网络)
 export HTTP_PROXY="http://proxy_ip:port"
 export HTTPS_PROXY="http://proxy_ip:port"
 
@@ -841,12 +841,12 @@ proxychains4 nmap -sT -p- {target}
 │ DNS爆破     │ OneForAll          │ 子域名深度枚举     │ 内置延迟1s           │
 │ DNS爆破     │ Subfinder          │ 多源子域名收集     │ 适量                │
 │ DNS解析     │ puredns            │ 高精度解析+泛解析  │ 可控                │
-│ 端口扫描    │ Nmap               │ 端口+服务版本      │ -T3 (-T2更隐蔽)     │
+│ 端口扫描    │ Nmap               │ 端口+服务版本      │ -T3 (-T2更低影响)   │
 │ 端口扫描    │ Masscan            │ 快速C段端口扫描    │ --rate ≤ 5000       │
 │ Web存活     │ httpx              │ Web存活+指纹       │ -rl 50              │
 │ 指纹识别    │ WhatWeb / Wappalyzer│ CMS识别            │ 适量                │
 │ WAF检测     │ wafw00f            │ WAF类型识别        │ 适量                │
-│ 漏洞检测    │ nuclei             │ 技术栈信息收集     │ -rl 30              │
+│ 模板识别    │ nuclei             │ 技术栈/暴露面识别  │ -rl 30              │
 │ Bucket枚举  │ s3scanner/cloud_enum│ 对象存储发现       │ 适量                │
 │ 代理控制    │ proxychains        │ SOCKS5代理包装     │ -                    │
 └──────────────────────────────────────────────────────────────────────────────┘
@@ -858,8 +858,8 @@ proxychains4 nmap -sT -p- {target}
 
 ```
 1. 授权确认: 每次主动探测前确认授权范围，超出范围立即停止
-2. 速率控制: 所有主动探测添加延迟参数，避免DDoS效果
-3. 代理隔离: 主动探测走代理/VPN，与日常网络隔离
+2. 速率控制: 所有主动探测添加延迟参数，避免对目标服务造成明显压力
+3. 出口隔离: 主动探测使用授权测试出口或隔离网络，与日常办公网络隔离
 4. 日志记录: 所有探测操作记录时间戳、目标、方法、结果
 5. 数据隔离: 产出物加密存储，演练结束后按甲方要求处置
 6. 禁止利用: 发现漏洞立即记录，不得在未授权情况下深入利用
