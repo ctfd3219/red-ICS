@@ -1,15 +1,16 @@
 # Red-ICS — 企业资产智能侦察系统
 
 <p align="center">
-  <img src="https://img.shields.io/badge/阶段-5%20Phase%20Pipeline-ff4757?style=flat-square" alt="5 Phases">
+  <a href="https://github.com/ctfd3219/red-ICS/releases"><img src="https://img.shields.io/github/v/release/ctfd3219/red-ICS?style=flat-square" alt="Release"></a>
+  <img src="https://img.shields.io/badge/阶段-6%20Phase%20Pipeline-ff4757?style=flat-square" alt="6 Phases">
   <img src="https://img.shields.io/badge/覆盖-组织%20%2B%20OSINT%20%2B%20主动探测-0078d4?style=flat-square" alt="Coverage">
-  <img src="https://img.shields.io/badge/模式-企业%20%2F%20政府%20双路径-2ea44f?style=flat-square" alt="Dual Mode">
+  <img src="https://img.shields.io/badge/模式-3%20授权级别%20%2B%20企业%2F政府双路径-2ea44f?style=flat-square" alt="Modes">
   <img src="https://img.shields.io/badge/CDN穿透-6%20种方法-orange?style=flat-square" alt="CDN Bypass">
-  <img src="https://img.shields.io/badge/交付-结构化侦察报告-lightgrey?style=flat-square" alt="Structured Report">
+  <img src="https://img.shields.io/badge/交付-19%2B%20结构化产物-lightgrey?style=flat-square" alt="Structured Output">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow?style=flat-square" alt="MIT License"></a>
 </p>
 
-> **一句话**：输入一个公司名，全自动完成 OSINT 被动收集 → 组织侦察 → 主动探测 → 资产报告生成。
+> **一句话**：输入一个公司名，全自动完成 Phase 0 准备 → 组织侦察 → OSINT 被动收集 → 扩展资产 → 主动探测 → 资产报告生成，支持 3 种授权模式和被动/主动资产分离保存。
 > **核心理念**：消灭信息收集中的机械重复操作 —— 原本手动操作 10+ 个平台、执行 50+ 条命令、人工整理数小时的工作，由技能自动编排完成。
 
 ---
@@ -21,7 +22,7 @@
 - [架构设计](#架构设计)
 - [项目结构](#项目结构)
 - [快速开始](#快速开始)
-- [五大阶段深度解析](#五大阶段深度解析)
+- [六大阶段深度解析](#六大阶段深度解析)
 - [知识库内容](#知识库内容)
 - [实战场景](#实战场景)
 - [目标类型自动判断](#目标类型自动判断)
@@ -51,6 +52,9 @@
 ### 组织级穿透
 从单一公司名出发，逐层穿透股权结构 → 控股子公司 → 参股公司 → 同一法人关联 → 分支机构。对政府目标自动切换行政架构穿透模式（上下级/直属/挂靠）。
 
+### 三级授权模式
+根据授权情况自动选择最强适用模式：`authorized`（全链路，被动→主动）、`passive-first`（授权不明时先被动，主动前确认）、`supplement`（基于已有数据补充采集 + 交叉核验）。
+
 ### 被动优先，零痕迹
 前三个阶段（组织侦察 → OSINT → 扩展资产）全程零痕迹，所有数据来自搜索引擎缓存、SSL 证书透明日志、WHOIS 数据库、ICP 备案公示等第三方公开源，不与目标直接交互。
 
@@ -61,33 +65,36 @@
 输入企业名 → 走企业版（股权穿透 + ICP 备案 + 商业云识别）。输入政府/事业单位名 → 走政府版（行政架构穿透 + gov.cn 域名体系 + 政务云识别 + 公安备案筛查）。
 
 ### 结构化交付
-产出 `Report.md` 完整侦察报告 + `company_info.json` + `domains_all.txt` + `ips_all.txt` + `ports_open.csv` + `host_collision.csv` + `credentials_found.json` 等 15+ 个结构化文件。
+产出 `Report.md` 完整侦察报告 + `scope.json` + `company_info.json` + `evidence_index.csv` + `assets_summary.xlsx` + `domains_all.txt` + `ips_all.txt` + `ports_open.csv` + `host_collision.csv` + `credentials_found.json` 等 19+ 个结构化文件，被动/主动资产分离保存，全链条可追溯。
 
 ---
 
 ## 架构设计
 
-Red-ICS 实现覆盖企业资产侦察全生命周期的 **5 阶段流水线**：
+Red-ICS 实现覆盖企业资产侦察全生命周期的 **6 阶段流水线**：
 
 ```mermaid
 flowchart LR
-    A["🎯 用户输入<br/>公司名/域名"] --> B["① 组织侦察<br/>ORG-RECON"]
-    B --> C["② OSINT 被动收集<br/>OSINT-INFO"]
-    C --> D["③ 扩展资产<br/>EXTENDED-ASSETS"]
-    D --> E["④ 主动探测<br/>Active Recon"]
-    E --> F["⑤ 报告输出<br/>Report.md"]
+    A["🎯 用户输入<br/>公司名/域名"] --> B["⓪ 准备范围<br/>Phase 0"]
+    B --> C["① 组织侦察<br/>ORG-RECON"]
+    C --> D["② OSINT 被动收集<br/>OSINT-INFO"]
+    D --> E["③ 扩展资产<br/>EXTENDED-ASSETS"]
+    E --> F["④ 主动探测<br/>Active Recon"]
+    F --> G["⑤ 报告输出<br/>Report.md"]
 
-    B -..-> B1["股权穿透<br/>ICP备案<br/>采购招标<br/>SSL证书<br/>品牌/产品收集<br/>云服务识别"]
-    C -..-> C1["WHOIS查询<br/>搜索引擎Dork<br/>ASN+IPSearch<br/>空间搜索引擎<br/>SSL证书SAN<br/>CDN穿透(6法)"]
-    D -..-> D1["小程序/公众号<br/>APP反编译<br/>硬编码凭据<br/>API端点提取"]
-    E -..-> E1["DNS爆破<br/>端口扫描<br/>Host碰撞<br/>对象存储枚举<br/>指纹识别"]
-    F -..-> F1["结构化报告<br/>CSV/JSON/TXT<br/>完整资产清单"]
+    B -..-> B1["目标类型判断<br/>输出骨架初始化<br/>依赖检查"]
+    C -..-> C1["股权穿透<br/>ICP备案<br/>采购招标<br/>SSL证书<br/>品牌/产品收集<br/>云服务识别"]
+    D -..-> D1["WHOIS查询<br/>搜索引擎Dork<br/>ASN+IPSearch<br/>空间搜索引擎<br/>SSL证书SAN<br/>CDN穿透(6法)"]
+    E -..-> E1["小程序/公众号<br/>APP反编译<br/>硬编码凭据<br/>API端点提取"]
+    F -..-> F1["DNS爆破<br/>端口扫描<br/>Host碰撞<br/>对象存储枚举<br/>指纹识别"]
+    G -..-> G1["结构化报告<br/>evidence_index.csv<br/>19+ 产物文件"]
 ```
 
-### 五大阶段一览
+### 六大阶段一览
 
 | # | 阶段 | 参考文档 | 核心输出 | 交互模式 |
 |---|------|---------|---------|---------|
+| 0 | **准备范围** | 自动 | scope.json、domains_seed.txt、输出骨架 | 本地检查 |
 | 1 | **组织侦察** | `ORG-RECON.md` | 股权图谱、ICP域名、品牌清单、云服务商 | 零痕迹，第三方公开源 |
 | 2 | **OSINT 被动收集** | `OSINT-INFO.md` | WHOIS 信息、子域名、CIDR 段、空间引擎结果、真实源站 IP | 零痕迹，搜索引擎+SSL日志 |
 | 3 | **扩展资产** | `EXTENDED-ASSETS.md` | 小程序列表、公众号矩阵、APP API 端点、硬编码凭据 | 零痕迹为主，APP 下载可选 |
@@ -99,20 +106,20 @@ flowchart LR
 ```mermaid
 sequenceDiagram
     actor User as 👤 用户
-    participant Auto as ⚙️ 自动判断
+    participant Prep as ⓪ 准备范围
     participant Org as ① 组织侦察
     participant Osint as ② OSINT
     participant Ext as ③ 扩展资产
     participant Active as ④ 主动探测
     participant Report as ⑤ 报告输出
 
-    User->>Auto: 输入目标（公司名/域名）
-    Auto->>Auto: 判断类型：企业 / 政府 / 通用
+    User->>Prep: 输入目标（公司名/域名）
+    Prep->>Prep: 判断类型 + 初始化输出骨架 + 检查依赖
     alt 企业目标
-        Auto->>Org: 启动 ORG-RECON（企业版）
+        Prep->>Org: 启动 ORG-RECON（企业版）
         Org->>Org: 股权穿透 → ICP备案 → 招标 → SSL → 云服务
     else 政府目标
-        Auto->>Org: 启动 ORG-RECON-GOV
+        Prep->>Org: 启动 ORG-RECON-GOV
         Org->>Org: 行政架构 → gov.cn域名 → 政务云 → 公安备案
     end
     Org->>Org: 输出：公司信息 + 域名种子
@@ -131,8 +138,8 @@ sequenceDiagram
     Active->>Active: 输出：存活资产 + 服务指纹
 
     Active->>Report: 汇总所有数据
-    Report->>Report: 去重合并 → 交叉验证归属 → 填入报告模板
-    Report-->>User: 📋 输出 /output/ 目录完整报告
+    Report->>Report: 去重合并 → 交叉验证归属 → 生成 evidence_index.csv
+    Report-->>User: 📋 输出 /output/ 目录完整报告 + assets_summary.xlsx
 ```
 
 ---
@@ -141,38 +148,55 @@ sequenceDiagram
 
 ```
 red-ICS/
-├── SKILL.md                    # 技能主定义（流程编排 + MCP 配置 + 安全守则）
+├── SKILL.md                    # 技能主定义 — Agent 执行规则书（流程编排、授权控制、
+│                               #    输出契约、字段规范、失败处理、完成标准）
 ├── README.md                   # 本文件
+├── CHANGELOG.md                # 版本更新日志
+├── config.json                 # 集中配置（默认输出、执行模式、资产状态、
+│                               #    可信度等级、阶段名称、assets_summary.xlsx 表头）
 │
-└── references/                 # 参考流程文档（约 4,400 行）
-    ├── ORG-RECON.md            # ① 组织侦察（企业版）
-    │                           #    股权穿透 5 层级、品牌收集、ICP 备案 6 策略、
-    │                           #    采购招标挖掘、SSL 证书分析、云服务识别
-    │
-    ├── ORG-RECON-GOV.md        # ① 组织侦察（政府/事业单位专项版）
-    │                           #    行政架构穿透 5 层级、gov.cn 域名体系、
-    │                           #    公安备案筛查、政务云识别、信息公开挖掘
-    │
-    ├── OSINT-INFO.md           # ② OSINT 被动收集
-    │                           #    WHOIS 查询、Bing/Baidu/Google Dork（子域名+URL+
-    │                           #    身份证/手机/学号/工号/邮箱社工信息）、ASN+IPSearch、
-    │                           #    FOFA/Hunter/Quake 空间搜索引擎、SSL 证书 SAN、
-    │                           #    CDN 穿透 6 种方法（含完整命令）
-    │
-    ├── EXTENDED-ASSETS.md      # ③ 扩展资产
-    │                           #    微信/支付宝/百度/抖音小程序发现与反编译、
-    │                           #    公众号矩阵收集、Android/iOS APP 反编译、
-    │                           #    硬编码凭据提取（API Key/Token/密码/OSS地址）
-    │
-    ├── Active Recon.md         # ④ 主动探测
-    │                           #    DNS 爆破（OneForAll/Subfinder）、端口扫描（Nmap/Masscan）、
-    │                           #    CDN 穿透验证、Host 碰撞、对象存储枚举（OSS/COS/S3）、
-    │                           #    端口指纹识别（httpx/WhatWeb/wafw00f/nuclei）
-    │
-    └── Report.md               # ⑤ 报告模板
-                                #    完整侦察报告模板（组织结构化 + 域名IP + 端口服务 +
-                                #    扩展资产 + 凭据清单 + 供应链 + 云服务），
-                                #    自动变量替换，即产即用
+├── scripts/                    # 辅助脚本
+│   ├── init_output.py          #   初始化 output/ 目录骨架（CSV表头/JSON空文件/
+│   │                           #     scope.json/Report.stub/assets_summary.xlsx 模板）
+│   └── ipsearch_mcp_plan.py   #   IPSearch-MCP 固定调用计划生成器
+│                               #    （IPv4 ip_lookup + 多组 keyword_lookup）
+│
+├── examples/                   # 典型调用示例
+│   ├── authorized-full-chain.md       # 完整授权全链路执行
+│   ├── passive-first.md               # 授权不明确时被动优先
+│   └── supplement-existing-data.md    # 已有数据补充采集 + 交叉核验
+│
+├── references/                 # 参考流程文档（约 4,700 行）
+│   ├── ORG-RECON.md            # ① 组织侦察（企业版）
+│   │                           #    股权穿透 5 层级、品牌收集、ICP 备案 6 策略、
+│   │                           #    采购招标挖掘、SSL 证书分析、云服务识别
+│   │
+│   ├── ORG-RECON-GOV.md        # ① 组织侦察（政府/事业单位专项版）
+│   │                           #    行政架构穿透 5 层级、gov.cn 域名体系、
+│   │                           #    公安备案筛查、政务云识别、信息公开挖掘
+│   │
+│   ├── OSINT-INFO.md           # ② OSINT 被动收集
+│   │                           #    WHOIS 查询、Bing/Baidu/Google Dork（子域名+URL+
+│   │                           #    身份证/手机/学号/工号/邮箱社工信息）、ASN+IPSearch、
+│   │                           #    FOFA/Hunter/Quake 空间搜索引擎、SSL 证书 SAN、
+│   │                           #    CDN 穿透 6 种方法（含完整命令）
+│   │
+│   ├── EXTENDED-ASSETS.md      # ③ 扩展资产
+│   │                           #    微信/支付宝/百度/抖音小程序发现与反编译、
+│   │                           #    公众号矩阵收集、Android/iOS APP 反编译、
+│   │                           #    硬编码凭据提取（API Key/Token/密码/OSS地址）
+│   │
+│   ├── Active Recon.md         # ④ 主动探测
+│   │                           #    DNS 爆破（OneForAll/Subfinder）、端口扫描（Nmap/Masscan）、
+│   │                           #    CDN 穿透验证、Host 碰撞、对象存储枚举（OSS/COS/S3）、
+│   │                           #    端口指纹识别（httpx/WhatWeb/wafw00f/nuclei）
+│   │
+│   └── Report.md               # ⑤ 报告模板
+│                               #    完整侦察报告模板（组织结构化 + 域名IP + 端口服务 +
+│                               #    扩展资产 + 凭据清单 + 供应链 + 云服务），
+│                               #    自动变量替换，即产即用
+│
+└── output/                     # 运行时产物（gitignore 排除）
 ```
 
 ---
@@ -252,29 +276,50 @@ cp -r red-ICS ~/.config/opencode/skills/red-ICS
 ```
 项目目录/output/
 ├── Report.md                    # 最终侦察报告（模板变量自动填入）
+├── scope.json                   # 目标范围、授权边界、执行假设
+├── evidence_index.csv           # 证据总索引（artifact/item/source/evidence/confidence/phase）
+├── assets_summary.xlsx          # 人工汇总模板（14 列：组织/域名/子域名/.../主动探测）
 ├── company_info.json            # 公司基础信息 + 股权穿透
+├── domains_seed.txt             # 阶段 1 输出的种子域名
 ├── domains_all.txt              # 全部域名（去重）
-├── subdomains_all.txt           # 全部子域名（去重）
+├── related_orgs.csv             # 关联组织清单
+├── subdomains_passive.txt       # 被动发现子域名
+├── subdomains_active.txt        # 主动发现子域名
+├── subdomains_all.txt           # 全部子域名（合并去重）
+├── ips_passive.txt              # 被动发现 IP
+├── ips_active.txt               # 主动发现 IP
 ├── ips_all.txt                  # 全部 IP（去重）
 ├── cidrs_all.txt                # 全部 CIDR 段（去重）
 ├── urls_web.txt                 # 全部 Web URL
 ├── ports_open.csv               # 开放端口清单 (IP,Port,Service,Version)
 ├── host_collision.csv           # Host 碰撞命中结果
+├── buckets_public.csv           # 公开 Bucket 清单
 ├── sensitive_files.txt          # 发现的敏感文件 URL
 ├── credentials_found.json       # 硬编码凭据清单
 ├── internal_hosts.txt           # 内部域名/IP 泄露
 ├── vendors_partners.csv         # 供应商/合作商清单
 ├── cloud_services.csv           # 云服务识别结果
-└── logs/                        # 各步骤执行日志
-    ├── step1_org_recon.log
-    ├── step2_osint.log
-    ├── step3_extended_assets.log
-    └── step4_active_recon.log
+└── logs/                        # 各阶段执行日志
+    ├── scope.log
+    ├── phase0_prepare.log
+    ├── phase1_org_recon.log
+    ├── phase2_passive_osint.log
+    ├── phase3_extended_assets.log
+    ├── phase4_active_recon.log
+    └── phase5_report.log
 ```
 
 ---
 
-## 五大阶段深度解析
+## 六大阶段深度解析
+
+### 阶段零：准备范围 — 目标解析与环境就绪
+
+**目标**：解析目标类型，初始化输出骨架，检查依赖可用性。
+
+- **目标类型判断**：企业 / 政府事业单位 / 纯域名目标
+- **初始化输出骨架**：`init_output.py` 自动创建 `output/` 目录、CSV 表头、JSON 空文件、`scope.json` 和 `assets_summary.xlsx` 模板
+- **依赖检查**：MCP Server、本地工具、API Key 可用性检查，缺口记录
 
 ### 阶段一：组织侦察 — 构建商业/行政关系图谱
 
@@ -457,13 +502,18 @@ Red-ICS 遵循渗透测试前期侦察的三大工程原则：
 
 ## 路线图
 
-- [x] 5 阶段核心流水线
+- [x] 6 阶段核心流水线（Phase 0 准备 + 5 阶段侦察）
+- [x] 3 种授权执行模式（authorized / passive-first / supplement）
 - [x] 企业/政府双模式自动切换
 - [x] CDN 穿透 6 法矩阵
 - [x] 搜索引擎 Dork 200+ 条语法库
 - [x] IPSearch-MCP 自动下载安装
 - [x] 主动探测完整安全控制（速率/代理/日志）
-- [x] 结构化报告模板自动填入
+- [x] 结构化报告 + 19+ 产物自动填入
+- [x] 脚本化输出初始化（init_output.py）+ xlsx 模板生成
+- [x] IPSearch 关键词策略生成器（ipsearch_mcp_plan.py）
+- [x] 证据索引审计追踪（evidence_index.csv）
+- [x] config.json 集中配置管理
 - [ ] MCP Server 整合方案（FOFA/Hunter/Quake 统一接口）
 - [ ] 主动探测工具容器化（Docker 封装 OneForAll/Masscan/Nmap）
 - [ ] 增量侦察模式（新旧数据对比，发现新增/变更资产）
